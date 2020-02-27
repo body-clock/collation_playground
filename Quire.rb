@@ -1,5 +1,6 @@
 require 'csv'
 require 'nokogiri'
+require 'set'
 
 class Manuscript
   attr_accessor :quires
@@ -81,15 +82,35 @@ CSV.foreach '/Users/patrick/work/collation_playground/quire_data.csv', headers: 
   row_hashes << row.to_h
 end
 
-my_quire = Quire.new(1)
-my_quire.add_leaves(row_hashes)
-my_quire.set_conjoins
-my_quire.leaves.each do |leaf|
+# TODO auto detect how many quires in the input csv
+# right now we are manually creating quires and shoveling
+# data in. if we create quires based on how many variations
+# of 'parent_quire' there are in the spreadsheet. then,
+# we separate the csv data based on their 'parent_quire'
+# number, and shovel the data into the quires that we have created.
+
+# get all parent_quire values into a list
+parent_quires = []
+row_hashes.each do |hash|
+  parent_quires << hash['parent_quire']
+  parent_quires.uniq!
+end
+
+quire_list = []
+parent_quires.each do |parent_quire_number|
+  quire_list << Quire.new(parent_quire_number)
+end
+
+# if the n value for a row in the hash is == 1, shovel those quires into quire 1
+
+quire_list[0].add_leaves(row_hashes)
+quire_list[0].set_conjoins
+quire_list[0].leaves.each do |leaf|
   puts sprintf('%2d  %2s', leaf.position, leaf.conjoin)
 end
 
 my_manuscript = Manuscript.new
-my_manuscript.quires << my_quire
+my_manuscript.quires << quire_list[0]
 
 puts my_manuscript.to_xml
 
