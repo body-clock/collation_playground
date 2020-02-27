@@ -12,13 +12,16 @@ class Manuscript
     builder = Nokogiri::XML::Builder.new do |xml|
       xml.manuscript {
         xml.quires {
-          @quires.each_with_index { |quire, index|
-            xml.quire('n': quire.leaves[index].parent_quire)
-            quire.leaves.each_with_index { |leaf, index |
-              xml.leaf('n': leaf.parent_quire, 'conjoin': quire.leaves[index].conjoin)
-            }
+          @quires.each { |quire|
+            xml.quire('n': quire.n)
           }
-
+        }
+        @quires.each { |quire|
+          quire.leaves.each { |leaf|
+            xml.leaf('n': leaf.position,
+                     'parent_quire':leaf.parent_quire,
+                     'conjoin': leaf.conjoin)
+          }
         }
       }
     end
@@ -27,10 +30,11 @@ class Manuscript
 end
 
 class Quire
-  attr_reader :leaves
+  attr_reader :leaves, :n
 
-  def initialize
+  def initialize(quire_number)
     @leaves = []
+    @n = quire_number
   end
 
   def add_leaf(parent_quire, position, folio_number, single = nil)
@@ -77,7 +81,7 @@ CSV.foreach '/Users/patrick/work/collation_playground/quire_data.csv', headers: 
   row_hashes << row.to_h
 end
 
-my_quire = Quire.new
+my_quire = Quire.new(1)
 my_quire.add_leaves(row_hashes)
 my_quire.set_conjoins
 my_quire.leaves.each do |leaf|
