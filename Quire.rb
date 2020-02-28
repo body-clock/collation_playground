@@ -31,25 +31,22 @@ class Manuscript
 end
 
 class Quire
-  attr_reader :leaves, :n
+  attr_reader :leaves
 
-  def initialize(quire_number)
+  def initialize
     @leaves = []
-    @n = quire_number
   end
 
   def add_leaf(parent_quire, position, folio_number, single = nil)
     @leaves << Leaf.new(parent_quire, position, folio_number, single)
   end
 
-  def add_leaves(quire_hashes)
-    quire_hashes.each do |row|
-      parent_quire = row['parent_quire']
-      position = row['position']
-      fol_num = row['fol_num']
-      single = row['single']
-      add_leaf(parent_quire, position, fol_num, single)
-    end
+  def add_leaves(leaf_hash)
+    parent_quire = leaf_hash['parent_quire'].to_i
+    position = leaf_hash['position']
+    fol_num = leaf_hash['fol_num']
+    single = leaf_hash['single']
+    add_leaf(parent_quire, position, fol_num, single)
   end
 
   def size
@@ -89,28 +86,19 @@ end
 # we separate the csv data based on their 'parent_quire'
 # number, and shovel the data into the quires that we have created.
 
-# get all parent_quire values into a list
-parent_quires = []
+quire_array = []
 row_hashes.each do |hash|
-  parent_quires << hash['parent_quire']
-  parent_quires.uniq!
+  parent_quire = hash['parent_quire'].to_i
+  quire_array[parent_quire] = [] if quire_array[parent_quire].nil?
+  quire_array[parent_quire] << hash
 end
 
-quire_list = []
-parent_quires.each do |parent_quire_number|
-  quire_list << Quire.new(parent_quire_number)
+# TODO this piece of code should create new quire objects and
+# shovel in the correct data to the correct quire
+quires = []
+quire_array.each do |quire_leaves|
+  next if quire_leaves.nil?
+  quire_leaves.each { |leaf_hash| quires << leaf_hash }
 end
 
-# if the n value for a row in the hash is == 1, shovel those quires into quire 1
-
-quire_list[0].add_leaves(row_hashes)
-quire_list[0].set_conjoins
-quire_list[0].leaves.each do |leaf|
-  puts sprintf('%2d  %2s', leaf.position, leaf.conjoin)
-end
-
-my_manuscript = Manuscript.new
-my_manuscript.quires << quire_list[0]
-
-puts my_manuscript.to_xml
-
+puts quires
